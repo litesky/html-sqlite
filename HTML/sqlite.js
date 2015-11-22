@@ -69,7 +69,6 @@ sqlite.req_pro = function(url, dat) {
 	//
 
 sqlite.escstr = function(src) {
-		src = src.replace(/'/g, '\'\'');
 		src = src.replace(/[\/]/g, '//'); // / 优先 / FIrst
 		src = src.replace(/]/g, '/]');
 		src = src.replace(/[%]/g, '/%');
@@ -82,10 +81,17 @@ sqlite.escstr = function(src) {
 	}
 	//
 
-sqlite.term = function(key, value) { //条件
+sqlite.term = function(key, value, s) { //条件
 		var str;
+		if (value) {
+			value = value.replace(/'/g, '\'\'');
+		}
 		if ((this.struc[key] & 1) == 1) {
-			str = '\'' + this.escstr(value) + '\'';
+			if (s) {
+				str = '\'' + this.escstr(value) + '\'';
+			} else {
+				str = '\'' + value + '\'';
+			}
 		} else if ((this.struc[key] & 2) == 2) {
 			str = value;
 		} else {
@@ -236,7 +242,7 @@ sqlite.match = function(arr, bar, inf) {
 		for (var xx = 0; xx < size; xx++) {
 			sql_srt.push(arr[xx]);
 			sql_srt.push(bar);
-			sql_srt.push(this.term(arr[xx], inf));
+			sql_srt.push(this.term(arr[xx], inf, 1));
 			if (xx + 1 < size) {
 				sql_srt.push('OR');
 			};
