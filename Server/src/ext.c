@@ -33,7 +33,9 @@ void get_sql( sql_t *sql )
     h3_request_header_parse(header, sql->raw, sql->size);
     opt = *(header->RequestURI+1);
     size = sql->raw + sql->size - header->RequestLineEnd;
-    //If RequestLineEnd Is Not Initialized. Initialize This In Function [h3_request_header_parse].
+    // If RequestLineEnd Is Not Initialized.
+    // Initialize This In Function [h3_request_header_parse].
+    // ?? https://github.com/c9s/h3/pull/14
     if (size == 0) {
         sql->size = strlen( RTX );
         sql->raw = cstr_sub( ( char *)(RTX), sql->size );
