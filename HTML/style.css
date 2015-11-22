@@ -1,0 +1,51 @@
+/* 布局 */
+body,html
+{
+    height:100%;
+    border:0px;
+    padding:0px;
+    margin:0px;
+}
+.wrap
+{
+    position:relative;
+    margin: 0 auto;
+    width:1000px;
+    border-radius: 5px;
+    border: 1px solid #aaa;
+    padding: 10px;
+}
+.wrap:after
+/*箭头*/
+{
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.main,.side
+{
+    float:left;
+}
+
+.main
+{
+    width: 70%;
+}
+
+.side
+{
+    width: 30%;
+}
+
+.content
+/*右边编辑区*/
+{
+    position: relative;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 5px;
+    border: 1px solid #aaa;
+}
+
+

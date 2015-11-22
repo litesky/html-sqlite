@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Yap</title>
+		<link rel="stylesheet" href="./style.css" />
+		<link rel="stylesheet" href="./timeline.css" />
+		<link rel="stylesheet" href="./pop.css" />
+	</head>
+	<style type="text/css">
+		.btnName{
+		      line-height:36px;
+		      height:36px;
+		      width:64px;
+		      background-color:#ededed;
+		      font-size:16px;
+		      font-weight:normal;
+		      font-family:Arial;
+		      text-align:center;
+		      display:inline-block;
+		      float:right;
+		    }
+		    .btnName:hover{
+		      background-color:#f5f5f5;
+		    }
+	</style>
+	<body>
+		<div class="wrap" style="z-index:50">
+			<ul class="timeline-vertical:before" style="text-align:center;">
+				<select name="dir" style="font-size:1.6em; margin:0 auto;width:135px;" onchange="ext_bar();"></select>
+				<select name="bar" style="font-size:1.6em; margin:0 auto;width:87px;"></select>
+				<input name="inf" type="text" style="font-size:1.6em;margin:0 auto;" onkeypress="ext_isEnt(event)" />
+			</ul>
+		</div>
+		 <h4></h4>
+
+		<div class="wrap" style="z-index:50">
+			<ul class="timeline" id="AAA">
+				<li></li>
+			</ul>
+		</div>
+		 <h4></h4>
+
+		<div id="pop" class="pop">
+			<div class="pop_head"><a href="javascript:void(0);" onclick="hide()">X</a>
+
+			</div>
+			<div class="pop_body">
+				<table id="csvTab"></table>
+			</div>
+		</div>
+		<script>
+			var scriptA = document.createElement("script");
+			    scriptA.type = "text/javascript";
+			    scriptA.src = "./sqlite.js";
+			    document.body.appendChild(scriptA);
+			    
+			    var scriptB = document.createElement("script");
+			    scriptB.type = "text/javascript";
+			    scriptB.src = "./ext.js";
+			    setTimeout("document.body.appendChild(scriptB);",500);
+			    
+			    setTimeout("ext_table();",800);
+			    setTimeout("ext_web();",800);
+	//获取滚动条当前的位置
+	function getScrollTop() {
+	var scrollTop = 0;
+	if (document.documentElement && document.documentElement.scrollTop) {
+	scrollTop = document.documentElement.scrollTop;
+	}
+	else if (document.body) {
+	scrollTop = document.body.scrollTop;
+	}
+	return scrollTop;
+	}
+	
+	//获取当前可是范围的高度
+	function getClientHeight() {
+	var clientHeight = 0;
+	if (document.body.clientHeight && document.documentElement.clientHeight) {
+	clientHeight = Math.min(document.body.clientHeight, document.documentElement.clientHeight);
+	}
+	else {
+	clientHeight = Math.max(document.body.clientHeight, document.documentElement.clientHeight);
+	}
+	return clientHeight;
+	}
+	
+	//获取文档完整的高度
+	function getScrollHeight() {
+	return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+	}
+		</script>
+	</body>
+	<script>
+		window.onscroll = function () {
+		if (getScrollTop() + getClientHeight() == getScrollHeight()) {
+				    setTimeout("ext_web(ext_table());",800);
+		}
+		}
+	</script>
+
+</html>

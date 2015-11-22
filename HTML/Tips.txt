@@ -1,0 +1,8 @@
+Table Struc
+sql:CREATE TABLE Nov (Book TEXT UNIQUE, Date, ID, Writer TEXT, Review TEXT, Rate, Op)
+
+Date Is The Unix Time In Secend.
+
+CSS
+Timeline:
+https://github.com/etoah/Timeline

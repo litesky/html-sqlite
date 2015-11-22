@@ -1,0 +1,15 @@
+.pop{display:none;  
+    border:1em solid #3366FF;  
+    /*height:240px;*/  
+    width:800px;  
+    position:fixed;/*absolute让节点脱离文档流,我的理解就是,从页面上浮出来,不再按照文档其它内容布局;fixed相对窗口*/
+    margin-left:-400px!important;/*FF IE7 该值为本身宽的一半 */
+    margin-top:-120px!important;
+    left:50%;
+	top:50%;/*节点脱离了文档流,如果设置位置需要用top和left,right,bottom定位*/  
+    z-index:100;/*个人理解为层级关系,由于这个节点要在顶部显示,所以这个值比其余节点的都大*/  
+    background: white;}
+.pop_head{position:relative;height:20px;background:#ccc}
+.pop_head a{position:absolute;right:8px;line-height:20px;color:#000;text-decoration:none}
+.pop_head a:hover{color:#f60;text-decoration:none}
+.pop_body{padding:8px}
