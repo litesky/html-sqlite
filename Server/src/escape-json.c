@@ -19,6 +19,7 @@ int escape_json(char *buf, char *dst)
 {
     int ext = 0;
     int pos = 0;
+    int mak = buf;
     if (dict == NULL) {
         dict_init();
     }
@@ -52,7 +53,12 @@ int escape_json(char *buf, char *dst)
     if(dst!=NULL) {
         dst[pos] = 0x00;
     }
-    return ext;
+    if (ext) {
+      return (buf - mak) + (ext + 1);
+    } else {
+      return 0;
+    }
+    
 }
 
 char *escape_json_pro(char *buf)
@@ -61,7 +67,7 @@ char *escape_json_pro(char *buf)
     int size;
     size = escape_json(buf, NULL);
     if ( size !=0 ) {
-        dst= (char *)malloc(sizeof(buf)+ size);
+        dst= (char *)malloc(size);
         escape_json(buf, dst);
         free(buf);
     } else {
@@ -79,7 +85,7 @@ char *escape_json_ext(char *buf, char **dst)
         if (*dst!=NULL) {
             free(*dst);
         }
-        tmp= (char *)malloc(sizeof(buf) + size);
+        tmp= (char *)malloc(size);
         escape_json(buf, (char *)tmp);
         *dst= tmp;
         return tmp;
