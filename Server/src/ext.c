@@ -27,7 +27,6 @@ void get_sql( sql_t *sql )
     RequestHeader *header;
     char opt;
     char *raw = NULL;
-    char *tmp = NULL;
     int size = 0;
     header = h3_request_header_new();
     h3_request_header_parse(header, sql->raw, sql->size);
@@ -42,12 +41,9 @@ void get_sql( sql_t *sql )
         h3_request_header_free(header);
         return;
     }
-    raw = cstr_sub( ( char *)(header->RequestLineEnd), size );
-    tmp = wbcs_to_mbcs(raw);
-    free(raw);
-    raw = tmp;
-    printf(">>%s<<\n", raw);
+    raw = wbcs_to_mbcs(header->RequestLineEnd);
     sql->raw = raw;
+    printf(">>%s<<\n", raw);
     switch ( opt ) {
         case '0': {
             db_0( sql );
@@ -58,6 +54,7 @@ void get_sql( sql_t *sql )
             break;
         };
         default: {
+            free(sql->raw);
             sql->size = strlen( RTX );
             sql->raw = cstr_sub( ( char *)(RTX), sql->size );
         };
@@ -76,6 +73,7 @@ void db_0( sql_t *sql )
     lstr_t *strPre = NULL;
     lstr_t *strSuf = NULL;
     nResult = sqlite3_get_table( sql->db, sql->raw, &pResult, &nRow, &nCol, &errmsg );
+    free(sql->raw);
     if ( nResult != SQLITE_OK ) {
         printf( "SQL: %s\n", errmsg );
         sqlite3_free( errmsg );
@@ -148,6 +146,7 @@ void db_1( sql_t *sql )
     char *errmsg;
     int nResult;
     nResult = sqlite3_exec( sql->db, sql->raw, NULL, NULL, &errmsg );
+    free(sql->raw);
     if ( nResult != SQLITE_OK ) {
         printf( "SQL: %s\n", errmsg );
         sqlite3_free( errmsg );
