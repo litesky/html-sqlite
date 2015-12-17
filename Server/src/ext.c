@@ -13,14 +13,12 @@
 #include "escape-json.h"
 
 void get_sql( sql_t *sql );
-void db_0( sql_t *sql );
-void db_1( sql_t *sql );
+void db_opt( sql_t *sql );
 
 /////////////////////
-static const char *TB0 = "HTTP/1.1 200 OK\r\nServer: HSI\r\nContent-Type: text/plain;charset=GBK\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\nContent-Length: ";
-static const char *TB1 = "\r\n\r\n{\"code\":200,\"db\":[";
-static const char *RTX = "HTTP/1.1 200 OK\r\nContent-Length: 20\r\nConnection: close\r\n\r\n{\"code\":403,\"db\":[]}";
-static const char *RTO = "HTTP/1.1 200 OK\r\nContent-Length: 20\r\nConnection: close\r\n\r\n{\"code\":404,\"db\":[]}";
+static const char *C0 = "HTTP/1.1 200 OK\r\nServer: HSI\r\nContent-Type: text/plain;charset=GBK\r\nAccess-Control-Allow-Origin: *\r\nConnection: keep-alive\r\nContent-Length: ";
+static const char *C1 = "\r\n\r\n{\"code\":200,\"db\":[[ "; //000
+static const char *C2 = "\r\n\r\n{\"code\":403,\"db\":[[\""; //000
 /////////////////////
 void get_sql( sql_t *sql )
 {
@@ -34,90 +32,91 @@ void get_sql( sql_t *sql )
     size = sql->raw + sql->size - header->RequestLineEnd;
     // If RequestLineEnd Is Not Initialized.
     // Initialize This In Function [h3_request_header_parse].
-    // ?? https://github.com/c9s/h3/pull/14
+    // Like https://github.com/c9s/h3/pull/14 ?
     if (size == 0) {
-        sql->size = strlen( RTX );
-        sql->raw = cstr_sub( ( char *)(RTX), sql->size );
-        h3_request_header_free(header);
-        return;
+      raw = (char *)malloc(1);
+      *raw = 0;
+    } else {
+      raw = wbcs_to_mbcs(header->RequestLineEnd);
     }
-    raw = wbcs_to_mbcs(header->RequestLineEnd);
+    if (raw == NULL) {
+      raw = (char *)malloc(1);
+      *raw = 0;
+    }
     sql->raw = raw;
     printf(">>%s<<\n", raw);
-    switch ( opt ) {
-        case '0': {
-            db_0( sql );
-            break;
-        };
-        case '1': {
-            db_1( sql );
-            break;
-        };
-        default: {
-            free(sql->raw);
-            sql->size = strlen( RTX );
-            sql->raw = cstr_sub( ( char *)(RTX), sql->size );
-        };
-    }
+    db_opt( sql );
+
     h3_request_header_free(header);
 }
 
-void db_0( sql_t *sql )
+void db_opt( sql_t *sql )
 {
-    char **pResult;
-    char *errmsg;
-    int i, j;
-    int nRow, nCol, nResult, nIndex;
+    const char *tail;
+    sqlite3_stmt *stmt;
+    int xx, rrc, nCol;
+    char *colText, *errmsg;
+    char **colName = 0;
+
     char *buf = NULL;
     char *json_dst = NULL;
     lstr_t *strPre = NULL;
     lstr_t *strSuf = NULL;
-    nResult = sqlite3_get_table( sql->db, sql->raw, &pResult, &nRow, &nCol, &errmsg );
+
+    rrc = sqlite3_prepare(sql->db, sql->raw, strlen(sql->raw), &stmt, &tail);
     free(sql->raw);
-    if ( nResult != SQLITE_OK ) {
-        printf( "SQL: %s\n", errmsg );
-        sqlite3_free( errmsg );
-        sql->size = strlen( RTX );
-        sql->raw = cstr_sub( ( char *)(RTX), sql->size );
-        if (json_dst!=NULL) {
-            free(json_dst);
-        }
-        return;
-    }
-    nIndex = nCol;
+
     strSuf = lstr_new();
     strPre = lstr_new();
-    lstr_cat_cstr( strPre, TB0, 0 );
-    lstr_cat_cstr( strSuf, TB1, 0 );
-    // Block |v ColName Arrary
-    lstr_cat_cstr( strSuf, "[ ", 2 );
-    for ( j = 0; j < nCol; j++ ) {
+    lstr_cat_cstr( strPre, C0, 0 );
+
+    if (rrc == SQLITE_OK) {
+      rrc = sqlite3_step(stmt);
+      nCol = sqlite3_column_count(stmt);
+      colName = (char *)malloc(sizeof(const char *) *nCol);
+      lstr_cat_cstr( strSuf, C1, 0 );
+    } else {
+      errmsg = sqlite3_errmsg(sql->db);
+      printf( "<<%s>>\n", errmsg);
+      lstr_cat_cstr( strSuf, C2, 0 );
+      lstr_cat_cstr( strSuf, (char *)escape_json_ext((char *)errmsg, &json_dst), 0 );
+      lstr_cat_cstr( strSuf, "\" ", 2 ); //000
+      //free(errmsg);
+      //sqlite3_free(errmsg);
+    }
+    if (rrc == SQLITE_ROW) {
+      for(xx=0; xx < nCol; xx++) {
+        colName[xx] = (char *)sqlite3_column_name(stmt, xx);
         lstr_cat_cstr( strSuf, "\"", 1 );
-        lstr_cat_cstr( strSuf, (char *)escape_json_ext((char *)pResult[j], &json_dst), 0 );
-        lstr_cat_cstr( strSuf, "\",", 2 );
-    };
-    strSuf->size = strSuf->size - 1;
-    lstr_cat_cstr( strSuf, "],", 2 );
-    // Block ^|
-    for ( i = 0; i < nRow; i++ ) {
+        lstr_cat_cstr( strSuf, (char *)escape_json_ext((char *)colName[xx], &json_dst), 0 );
+        lstr_cat_cstr( strSuf, "\",", 2 ); //000
+      }
+    }
+    strSuf->size = strSuf->size - 1; //000
+    lstr_cat_cstr( strSuf, "],", 2 ); //000
+
+    while(rrc == SQLITE_ROW) {
         lstr_cat_cstr( strSuf, "{", 1 );
-        for ( j = 0; j < nCol; j++ ) {
+        for(xx=0; xx < nCol; xx++) {
             lstr_cat_cstr( strSuf, "\"", 1 );
-            lstr_cat_cstr( strSuf, (char *)escape_json_ext((char *)pResult[j], &json_dst), 0 );
+            //colName=sqlite3_column_name(stmt, xx);
+            lstr_cat_cstr( strSuf, (char *)escape_json_ext((char *)colName[xx], &json_dst), 0 );
             lstr_cat_cstr( strSuf, "\":\"", 3 );
-            if (pResult[nIndex] != NULL) {
-                lstr_cat_cstr( strSuf, (char *)escape_json_ext((char *)pResult[nIndex], &json_dst), 0 );
+            colText = sqlite3_column_text(stmt, xx);
+            if (colText != NULL) {
+                lstr_cat_cstr( strSuf, (char *)escape_json_ext((char *)colText, &json_dst), 0 );
+                //free(colText);
             } else {
                 lstr_cat_cstr( strSuf, "NULL", 4 );
             }
-            lstr_cat_cstr( strSuf, "\",", 2 );
-            ++nIndex;
-        };
-        strSuf->size = strSuf->size - 1;
-        lstr_cat_cstr( strSuf, "},", 2 );
-    };
-    strSuf->size = strSuf->size - 1;
-    lstr_cat_cstr( strSuf, "]}", 2 );
+            lstr_cat_cstr( strSuf, "\",", 2 ); //001
+        }
+        strSuf->size = strSuf->size - 1; //001
+        lstr_cat_cstr( strSuf, "},", 2 ); //000
+        rrc = sqlite3_step(stmt);
+    }
+    strSuf->size = strSuf->size - 1; //000
+    lstr_cat_cstr( strSuf, "]}", 2 ); //000
 
     buf = ( char *)malloc( sizeof( char ) * (  32 ) );
     itoa( strSuf->size - 4, buf, 10 ); //\r\n\r\n
@@ -127,11 +126,11 @@ void db_0( sql_t *sql )
     sql->raw = strPre->data;
     sql->size = strPre->size;
     if (strSuf->size> 82) {
-        printf("%.*s\n",78,strSuf->data+4);
+        printf("%.*s\n\n",78,strSuf->data+4);
     } else {
-        printf("%s\n",strSuf->data+4);
+        printf("%s\n\n",strSuf->data+4);
     }
-    sqlite3_free_table( pResult );
+
     free(buf);
     free(strSuf->data);
     free(strSuf);
@@ -139,23 +138,8 @@ void db_0( sql_t *sql )
     if (json_dst!=NULL) {
         free(json_dst);
     }
-}
-
-void db_1( sql_t *sql )
-{
-    char *errmsg;
-    int nResult;
-    nResult = sqlite3_exec( sql->db, sql->raw, NULL, NULL, &errmsg );
-    free(sql->raw);
-    if ( nResult != SQLITE_OK ) {
-        printf( "SQL: %s\n", errmsg );
-        sqlite3_free( errmsg );
-        sql->size = strlen( RTX );
-        sql->raw = cstr_sub( ( char *)(RTX), sql->size );
-        return;
-    } else {
-        sql->size = strlen( RTO );
-        sql->raw = cstr_sub( ( char *)(RTO), sql->size );
-        return;
+    sqlite3_finalize(stmt);
+    if (colName!=NULL) {
+        free(colName);
     }
 }
