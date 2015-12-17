@@ -5,7 +5,7 @@ sqlite.limit = 30;
 sqlite.offset = 1;
 //
 function ext_req(xx) {
-  sqlite.req_pro('http://localhost:9050/0', xx);
+  sqlite.req_pro('http://localhost:9050/', xx);
 }
 //
 
